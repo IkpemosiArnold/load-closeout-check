@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Load Closeout</title>
+<meta name="description" content="Carrier invoices checked against the rate con, the signed POD and receipts before a load is paid. Every line points at its source; plain code holds back what it cannot trace.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#fcfcfb">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#100f0e">
+<link rel="icon" href="data:,">
+<link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-cross" viewBox="0 0 16 16"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+  <symbol id="i-none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2.2 2.2"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 16 16"><path d="M6 3.5L10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+<main class="shell">
+  <div class="sheet-col">
+    <header class="top">
+      <p class="mark">Load Closeout <span class="tag">Sample data</span></p>
+      <h1>Every dollar on a carrier invoice points at its paperwork.</h1>
+      <p class="sub">Eight delivered loads, all made up. Plain code checks each invoice against the rate con and the signed POD, and holds back what it cannot trace.</p>
+    </header>
+
+    <section class="reading" aria-labelledby="summary">
+      <p class="summary" id="summary" role="status"><span class="sum-main">Checking</span></p>
+      <button type="button" class="btn text why-btn" id="why-btn" aria-expanded="false" aria-controls="chain">What ready means</button>
+      <div class="why-text" id="chain" hidden>
+        <p>Ready means the rate con, invoice and POD are all here with one load number, the invoice comes from the carrier and MC on the rate con, the POD is signed, dated and clean, every charge was agreed on the rate con and is supported, and the lines add up. Anything else is held back with the reason and the lines it looked at.</p>
+        <p>Detention is worked out from the POD: the clock starts at the later of the appointment and the truck's arrival, stops at the out time, less the free hours, in quarter hours. A lumper needs its receipt.</p>
+      </div>
+      <div id="groups" class="groups"></div>
+    </section>
+  </div>
+
+  <aside class="evidence-col" id="side" aria-live="polite"></aside>
+
+  <section class="tool" id="ap-tool" aria-labelledby="ap-h">
+    <h2 id="ap-h">Approved for payment</h2>
+    <p class="tool-sub" id="ap-sub">Nothing approved yet. Open a ready load and approve it.</p>
+    <div class="actions top-actions">
+      <button type="button" id="ap-dl" class="btn primary" disabled>Download the AP file</button>
+      <button type="button" id="reset" class="btn text">Reset sample</button>
+    </div>
+  </section>
+
+  <section class="tool" id="own-tool" aria-labelledby="own-h">
+    <h2 id="own-h">Try your own invoice</h2>
+    <p class="tool-sub">Paste a carrier invoice as text. It is checked in this browser against the sample rate con and POD for the load it names (40117 to 40124).</p>
+    <label class="sr" for="own-in">Carrier invoice</label>
+    <textarea id="own-in" rows="7" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="INVOICE 100&#10;Kettle Creek Transport LLC, MC 9990114&#10;Load: 40117&#10;Linehaul $1,350.00&#10;Fuel surcharge $210.00&#10;Detention 1.0 hrs @ $50.00 $50.00&#10;Total due $1,610.00"></textarea>
+    <div class="actions">
+      <button type="button" id="own-check" class="btn primary">Check it</button>
+      <button type="button" id="own-sample" class="btn text">Fill in an example</button>
+    </div>
+    <p id="own-error" class="error" role="alert" hidden></p>
+    <div id="own-out"></div>
+  </section>
+
+  <footer class="foot" id="foot">
+    <p>For freight brokerage back offices that close out loads before paying carriers. Built by Arnold Ikpemosi Adeyemi. Made-up loads, carriers and MC numbers.</p>
+    <p><a href="https://ikpemosi.work">ikpemosi.work</a></p>
+  </footer>
+</main>
+<script type="module" src="app.js?v=1"></script>
+</body>
+</html>

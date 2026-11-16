@@ -148,3 +148,76 @@ test("AP export lists the ready loads", () => {
 test("pasted invoice text is split into clean lines", () => {
   assert.deepEqual(pastedLines("  INVOICE 1 \n\n Linehaul   $1,350.00\r\n"), ["INVOICE 1", "Linehaul $1,350.00"]);
 });
+
+test("a charge billed twice is held, never paid twice", () => {
+  const l = byId("40118");
+  l.docs.inv = ["INVOICE 0918", "Bluestem Haulers Inc, MC 9990187", "Load: 40118", "Linehaul $1,180.00", "Linehaul $1,180.00", "Fuel surcharge $190.00", "Total due $2,550.00"];
+  const r = checkLoad(l);
+  assert.deepEqual(holdIds(r), ["lines:fail"]);
+  assert.match(r.holds[0].text, /Linehaul is on the invoice twice/);
+});
+
+test("a second lumper line against one receipt is held", () => {
+  const l = byId("40124");
+  l.docs.inv.splice(6, 0, "Lumper $165.00");
+  l.docs.inv[7] = "Total due $3,200.00";
+  assert.deepEqual(holdIds(checkLoad(l)), ["lines:fail"]);
+});
+
+test("an invoice line the reader cannot read holds the load", () => {
+  const l = byId("40123");
+  l.docs.inv.splice(6, 0, "Tarp fee 75");
+  const r = checkLoad(l);
+  assert.deepEqual(holdIds(r), ["lines:none"]);
+  assert.match(r.holds[0].text, /Not read: invoice line 7, "Tarp fee 75"/);
+});
+
+test("a remit-to line holds the load even when the MC matches", () => {
+  const l = byId("40117");
+  l.docs.inv.push("Remit to: new bank details attached");
+  const r = checkLoad(l);
+  assert.deepEqual(holdIds(r), ["carrier:fail"]);
+  assert.match(r.holds[0].text, /number you have on file/);
+});
+
+test("a different name and a different MC is not called a name match", () => {
+  const l = byId("40118");
+  l.docs.inv[1] = "Prairie Wind Freight LLC, MC 9990555";
+  assert.match(checkLoad(l).holds[0].text, /The names differ too/);
+});
+
+test("carrier name in capitals and MC written MC#: still the same carrier", () => {
+  const l = byId("40117");
+  l.docs.inv[1] = "KETTLE CREEK TRANSPORT LLC MC# 9990114";
+  assert.equal(checkLoad(l).ready, true);
+});
+
+test("detention billed under what the POD supports reads as under", () => {
+  const l = byId("40118");
+  l.docs.inv[5] = "Detention 1.0 hrs @ $50.00 $50.00";
+  l.docs.inv[6] = "Total due $1,420.00";
+  const d = checkLoad(l).lines.find((x) => x.label === "Detention");
+  assert.equal(d.diff, -25);
+  assert.equal(d.short, "Detention billed 1.0 hrs, POD supports 1.5");
+});
+
+test("detention with no hours on the line passes when the amount is right", () => {
+  const l = byId("40118");
+  l.docs.inv[5] = "Detention $75.00";
+  l.docs.inv[6] = "Total due $1,445.00";
+  assert.equal(checkLoad(l).ready, true);
+});
+
+test("the row reason says what is wrong", () => {
+  const s = checkAll(loads);
+  const short = (id) => s.results.find((r) => r.id === id).lines.find((l) => l.state !== "pass").short;
+  assert.equal(short("40118"), "Detention billed 3.0 hrs, POD supports 1.5");
+  assert.equal(short("40121"), "Linehaul $150.00 over the rate con");
+  assert.match(s.results.find((r) => r.id === "40118").holds[0].text, /Appointment 07:00 to out 10:30 = 3\.5 hrs, less 2 free = 1\.5 hrs/);
+});
+
+test("40122: red goes under the MC and the remit-to line, not under the matching name", () => {
+  const r = checkLoad(byId("40122"));
+  const invRefs = r.holds[0].refs.filter((x) => x.doc === "inv").map((x) => r.docs.inv[x.line].slice(x.start, x.end));
+  assert.deepEqual(invRefs, ["9990262", "new bank details attached"]);
+});

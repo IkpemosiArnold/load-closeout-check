@@ -12,13 +12,15 @@ A load is ready to pay only when all of these hold:
 
 1. **The packet is complete.** Rate con, carrier invoice and POD are all there.
 2. **One load number.** The same load number is on all three.
-3. **The right carrier.** The invoice comes from the carrier name and MC number on the rate con.
+3. **The right carrier.** The invoice comes from the carrier name and MC number on the rate con. A remit-to line on the invoice holds the load, because the sample has no bank file to check it against.
 4. **A clean POD.** The receiver signed it, it is dated, and there are no exceptions (shortage, damage, refusal).
 5. **Every line agreed and supported.**
    - Linehaul and fuel surcharge match the rate con to the cent.
    - Detention is worked out from the POD under the rate con's terms: the clock starts at the later of the appointment and the truck's arrival, stops at the out time, less the free hours, counted in whole quarter hours.
    - A lumper needs a receipt for at least the amount billed.
    - A charge the rate con does not list is held.
+   - A charge is paid once. A second line with the same name is held.
+   - A line the reader cannot read is quoted and holds the load.
 6. **The arithmetic.** The invoice lines add up to the total due.
 
 The five held back in the sample:
@@ -44,7 +46,11 @@ The reader here is plain rules over text lines: `Label: value` rows, dollar amou
 - A pickup appointment, multi-stop loads, TONU, driver assist and other accessorials are not read. Any charge outside the rate con is held.
 - The MC check compares numbers on the documents. It does not look the carrier up in FMCSA records or check insurance or authority status.
 - POD exceptions are read as text. Any text other than "none" holds the load.
-- There is no quick pay or factoring. A factoring company's remit-to on the invoice would need its own check.
+- There is no quick pay, factoring or bank file. Any remit-to line holds the load. A factoring company's notice of assignment would need its own check.
+- The rates are made up and are not market rates. Fuel is a flat figure per load. A real fuel surcharge is usually cents per mile off a diesel index, or folded into an all-in rate.
+- Detention and lumper are checked against the rate con's terms, the POD and the receipt. Many brokers pay an accessorial only once it is on a revised rate con. That step is not modelled.
+- The sample POD carries the broker's load number. A real POD often carries only the shipper's BOL or PO number, and the match runs on the reference numbers listed on the rate con.
+- An invoice line billed under the agreed amount is held, not paid at the lower figure.
 
 ## Run the tests
 
@@ -52,7 +58,7 @@ The reader here is plain rules over text lines: `Label: value` rows, dollar amou
 node --test
 ```
 
-Needs Node 20 or later. No dependencies. 18 tests cover the sample result, detention maths (the clock start, the quarter-hour rounding, missing times), the lumper receipt, the POD signature and exceptions, the linehaul mismatch, the MC mismatch, an unlisted charge, the arithmetic, a missing POD, the AP export, and that every reference points at a real place in its document.
+Needs Node 20 or later. No dependencies. 28 tests cover the sample result, detention maths (the clock start, the quarter-hour rounding, missing times, a line with no hours), the lumper receipt, the POD signature and exceptions, the linehaul mismatch, the MC mismatch, a remit-to line, a charge billed twice, an unlisted charge, a line that cannot be read, the arithmetic, a missing POD, the AP export, and that every reference points at a real place in its document.
 
 ## Open the page locally
 
@@ -70,7 +76,7 @@ Fonts: Geist and Newsreader (SIL Open Font License), in `fonts/`.
 
 ## Provenance
 
-Built on 16 Nov 2026 with AI coding agents, directed by Arnold Ikpemosi Adeyemi. Made-up loads, carriers, customers and MC numbers. The MC numbers start at 9,990,000, chosen to sit well above the range carriers hold, so they should not match a real carrier.
+Built on 16 Nov 2026 with AI coding agents, directed by Arnold Ikpemosi Adeyemi. Made-up loads, carriers, customers and MC numbers. The MC numbers start at 9,990,000, above the old sequential range. Since May 2026 FMCSA issues new numbers at random, so one could match a real carrier by chance. None is meant, and they were not checked against FMCSA records.
 
 ## Licence
 

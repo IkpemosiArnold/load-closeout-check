@@ -1,6 +1,7 @@
 // Sample data. A made-up freight brokerage, made-up carriers, made-up loads.
-// MC numbers start at 9,990,000, chosen to sit well above the range carriers
-// hold, so they should not match a real carrier.
+// MC numbers start at 9,990,000, above the old sequential range. Since May 2026
+// FMCSA issues new numbers at random, so a match with a real carrier is possible
+// by chance. None is meant.
 //
 // Each load has the packet a broker's back office closes out before paying the
 // carrier: the rate confirmation the broker sent, the carrier's invoice, the
@@ -10,7 +11,7 @@
 const TERMS = [
   "Detention: $50.00/hr after 2 hrs free at each stop.",
   "Detention clock starts at the later of appointment and arrival.",
-  "Billed in quarter hours from the in/out times on the signed POD.",
+  "Billed in quarter hours from the arrival and out times on the signed POD.",
   "Lumper: reimbursed at cost with the receipt.",
   "Pay only the carrier and MC on this confirmation.",
 ];
@@ -42,7 +43,7 @@ export const loads = [
     id: "40117",
     received: "Mon 16 Nov, 07:58",
     docs: {
-      rc: rc({ load: "40117", carrier: "Kettle Creek Transport LLC", mc: "9990114", pu: "11/09/2026 08:00, Plano TX", del: "11/10/2026", appt: "07:00, Tulsa OK", lane: "Plano TX to Tulsa OK", linehaul: 1350, fuel: 210 }),
+      rc: rc({ load: "40117", carrier: "Kettle Creek Transport LLC", mc: "9990114", pu: "11/09/2026 08:00, San Antonio TX", del: "11/10/2026", appt: "07:00, Tulsa OK", lane: "San Antonio TX to Tulsa OK", linehaul: 1350, fuel: 210 }),
       inv: [
         "INVOICE KCT-2231",
         "Kettle Creek Transport LLC, MC 9990114",
@@ -68,7 +69,7 @@ export const loads = [
     id: "40118",
     received: "Mon 16 Nov, 08:04",
     docs: {
-      rc: rc({ load: "40118", carrier: "Bluestem Haulers Inc", mc: "9990187", pu: "11/10/2026 06:00, Joliet IL", del: "11/11/2026", appt: "07:00, Columbus OH", lane: "Joliet IL to Columbus OH", linehaul: 1180, fuel: 190 }),
+      rc: rc({ load: "40118", carrier: "Bluestem Haulers Inc", mc: "9990187", pu: "11/10/2026 06:00, Green Bay WI", del: "11/11/2026", appt: "07:00, Columbus OH", lane: "Green Bay WI to Columbus OH", linehaul: 1180, fuel: 190 }),
       inv: [
         "INVOICE 0918",
         "Bluestem Haulers Inc, MC 9990187",
@@ -148,7 +149,7 @@ export const loads = [
     id: "40121",
     received: "Mon 16 Nov, 08:26",
     docs: {
-      rc: rc({ load: "40121", carrier: "Mesa Ridge Logistics", mc: "9990318", pu: "11/11/2026 07:00, Phoenix AZ", del: "11/12/2026", appt: "13:00, El Paso TX", lane: "Phoenix AZ to El Paso TX", linehaul: 2250, fuel: 330 }),
+      rc: rc({ load: "40121", carrier: "Mesa Ridge Logistics", mc: "9990318", pu: "11/11/2026 07:00, Los Angeles CA", del: "11/12/2026", appt: "13:00, El Paso TX", lane: "Los Angeles CA to El Paso TX", linehaul: 2250, fuel: 330 }),
       inv: [
         "INVOICE MRL-7781",
         "Mesa Ridge Logistics, MC 9990318",
@@ -174,7 +175,7 @@ export const loads = [
     id: "40122",
     received: "Mon 16 Nov, 08:33",
     docs: {
-      rc: rc({ load: "40122", carrier: "Lone Pine Carriers LLC", mc: "9990226", pu: "11/12/2026 10:00, Savannah GA", del: "11/13/2026", appt: "06:00, Charlotte NC", lane: "Savannah GA to Charlotte NC", linehaul: 1100, fuel: 170 }),
+      rc: rc({ load: "40122", carrier: "Lone Pine Carriers LLC", mc: "9990226", pu: "11/12/2026 10:00, Louisville KY", del: "11/13/2026", appt: "06:00, Charlotte NC", lane: "Louisville KY to Charlotte NC", linehaul: 1100, fuel: 170 }),
       inv: [
         "INVOICE 4471",
         "Lone Pine Carriers LLC, MC 9990262",
@@ -188,7 +189,7 @@ export const loads = [
         "BILL OF LADING / PROOF OF DELIVERY",
         "Load: 40122",
         "Consignee: Queen City Beverage, Charlotte NC",
-        "Pieces: 26 pallets",
+        "Pieces: 22 pallets",
         "Arrived: 05:44",
         "In: 06:00 Out: 07:15",
         "Received by: T. Brooks",

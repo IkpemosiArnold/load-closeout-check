@@ -38,7 +38,7 @@ function hm(s) {
 }
 const hrs = (min) => {
   const h = min / 60;
-  if (Number.isInteger(h * 4)) return `${h} hrs`;
+  if (Number.isInteger(h * 4)) return `${h} ${h === 1 ? "hr" : "hrs"}`;
   return `${Math.floor(min / 60)} hr ${min % 60} min`;
 };
 
@@ -60,7 +60,7 @@ export function readPacket(docs) {
   };
   const inv = {
     number: find(docs, "inv", /^INVOICE (\S+)/),
-    from: find(docs, "inv", /^(.+), MC (\d+)$/),
+    from: find(docs, "inv", /^(.+?),? MC[ #-]*(\d+)$/),
     load: find(docs, "inv", /^Load: (\S+)/),
     totalDue: find(docs, "inv", new RegExp(`^Total due ${MONEY}`)),
     remit: find(docs, "inv", /^Remit to: (.+)$/),
@@ -69,8 +69,11 @@ export function readPacket(docs) {
   const invLines = docs.inv || [];
   const lineRe = new RegExp(String.raw`^(Linehaul|Fuel surcharge|Detention|Lumper|Layover|TONU|Driver assist|Stop off)(?: (\d+(?:\.\d+)?) hrs? @ ${MONEY})? ${MONEY}$`, "d");
   const otherRe = new RegExp(String.raw`^([A-Za-z][A-Za-z /-]+?) ${MONEY}$`, "d");
+  // Header lines the reader used. Every other line must read as a charge, or it is listed as not read.
+  const known = new Set([inv.number, inv.from, inv.load, inv.totalDue, inv.remit].filter(Boolean).map((f) => f.line));
+  inv.unread = [];
   invLines.forEach((text, i) => {
-    if (/^Total due/.test(text)) return;
+    if (known.has(i)) return;
     let m = lineRe.exec(text);
     if (m) {
       const at = (g) => (m[g] == null ? null : { text: m[g], ref: { doc: "inv", line: i, start: m.indices[g][0], end: m.indices[g][1] } });
@@ -84,7 +87,9 @@ export function readPacket(docs) {
         labelRef: { text: m[1], ref: { doc: "inv", line: i, start: m.indices[1][0], end: m.indices[1][1] } },
         amount: { text: m[2], ref: { doc: "inv", line: i, start: m.indices[2][0], end: m.indices[2][1] } },
       });
+      return;
     }
+    inv.unread.push({ line: i, text });
   });
   const pod = {
     load: find(docs, "pod", /^Load: (\S+)/),
@@ -102,6 +107,7 @@ export function readPacket(docs) {
 
 const g = (f, i = 0) => (f && f.groups[i]) || null;
 const refsOf = (...xs) => xs.filter(Boolean).map((x) => x.ref || x);
+const nameKey = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
 /** Detention the POD supports, under the rate con's terms. */
 export function detentionSupported(p) {
@@ -159,13 +165,19 @@ export function checkLoad(load) {
   const rcMc = g(p.rc.mc), invMc = g(p.inv.from, 1), invName = g(p.inv.from, 0), rcName = g(p.rc.carrier);
   const remit = g(p.inv.remit);
   const mcRefs = refsOf(rcName, rcMc, invName, invMc, g(p.rc.payOnly));
+  const sameName = rcName && invName && nameKey(rcName.text) === nameKey(invName.text);
+  const onFile = " Confirm with the carrier on the number you have on file before paying.";
   if (!rcMc || !invMc) add("carrier", "none", "Not found: no MC number on the rate con or the invoice.", mcRefs);
   else if (rcMc.text !== invMc.text) {
-    let t = `The invoice is from MC ${invMc.text}; the rate con is with MC ${rcMc.text}. The names match, the numbers do not.`;
-    if (remit) t += ` It also asks to pay new bank details. Confirm with the carrier on the number you have on file before paying.`;
-    add("carrier", "fail", t, [...mcRefs, ...refsOf(remit)]);
-  } else if (rcName && invName && rcName.text !== invName.text)
+    let t = `The invoice is from MC ${invMc.text}; the rate con is with MC ${rcMc.text}.`;
+    t += sameName ? " The names match, the numbers do not." : " The names differ too.";
+    if (remit) t += ` Its remit-to line says "${remit.text}".${onFile}`;
+    // Red goes under what differs: the MC always, the name only when it differs too.
+    add("carrier", "fail", t, refsOf(rcName, rcMc, sameName ? null : invName, invMc, g(p.rc.payOnly), remit));
+  } else if (rcName && invName && !sameName)
     add("carrier", "fail", `Same MC, different name: "${invName.text}" against "${rcName.text}".`, mcRefs);
+  else if (remit)
+    add("carrier", "fail", `Right carrier and MC, but the remit-to line says "${remit.text}". This sample has no bank file to check that against.${onFile}`, refsOf(remit, rcName, rcMc, g(p.rc.payOnly)));
   else add("carrier", "pass", `${rcName ? rcName.text : "Carrier"}, MC ${rcMc.text}, on both.`, mcRefs);
 
   // 4. POD signed, dated, clean
@@ -182,9 +194,18 @@ export function checkLoad(load) {
 
   // 5. Each invoice line against the rate con, POD and receipt
   const lines = p.inv.lines.map((l) => lineCheck(l, p));
+  // A charge is paid once. A second line with the same name is held.
+  const firstAt = new Map();
+  lines.forEach((l, i) => {
+    if (!firstAt.has(l.label)) { firstAt.set(l.label, i); return; }
+    lines[i] = { ...l, state: "fail", why: `${l.label} is on the invoice twice.`, short: `${l.label} billed twice`, calc: null, sum: null, agreed: 0, diff: l.billed, refs: [lines[firstAt.get(l.label)].refs[0], l.refs[0]] };
+  });
   const bad = lines.filter((l) => l.state !== "pass");
-  if (!lines.length) add("lines", "none", "Not found: no charge lines on the invoice.");
-  else if (bad.length) add("lines", bad.some((l) => l.state === "fail") ? "fail" : "none", bad.map((l) => l.why).join(" "), bad.flatMap((l) => l.refs));
+  const unread = p.inv.unread.map((u) => `Not read: invoice line ${u.line + 1}, "${u.text}".`);
+  const unreadRefs = p.inv.unread.map((u) => lineRef("inv", u.line, docs.inv));
+  const reasons = [...bad.map((l) => (l.sum ? `${l.why} ${l.sum}` : l.why)), ...unread];
+  if (!lines.length) add("lines", "none", ["Not found: no charge lines on the invoice.", ...unread].join(" "), unreadRefs);
+  else if (reasons.length) add("lines", bad.some((l) => l.state === "fail") ? "fail" : "none", reasons.join(" "), [...bad.flatMap((l) => l.refs), ...unreadRefs]);
   else add("lines", "pass", `${lines.length} lines, each on the rate con.`, lines.flatMap((l) => l.refs));
 
   // 6. Arithmetic
@@ -222,19 +243,27 @@ function lineCheck(l, p) {
     if (!agreed) return out("none", `Not found: no ${l.label.toLowerCase()} on the rate con.`, []);
     const a = num(agreed.text);
     if (cents(a) !== cents(billed))
-      return out("fail", `${l.label} billed $${fmt(billed)}; the rate con agreed $${agreed.text}.`, refsOf(agreed), { agreed: a, diff: billed - a });
+      return out("fail", `${l.label} billed $${fmt(billed)}; the rate con agreed $${agreed.text}.`, refsOf(agreed), {
+        agreed: a, diff: billed - a, short: `${l.label} $${fmt(Math.abs(billed - a))} ${billed > a ? "over" : "under"} the rate con`,
+      });
     return out("pass", `Matches the rate con.`, refsOf(agreed), { agreed: a, calc: `Rate con $${agreed.text}` });
   }
 
   if (l.label === "Detention") {
     const d = detentionSupported(p);
     if (!d.ok) return out("none", d.why, d.refs);
-    const qtyOk = l.qty && l.rate && cents(num(l.qty.text) * num(l.rate.text)) === cents(billed);
+    // Hours and a rate are optional on a carrier's line. When they are there, they must multiply out.
+    const qtyOk = !l.qty || cents(num(l.qty.text) * num(l.rate.text)) === cents(billed);
     const ref2 = refsOf(l.qty, l.rate);
+    const calc = `${d.calc} = $${fmt(d.amount)}`;
     if (cents(d.amount) === cents(billed) && qtyOk)
-      return out("pass", "Supported by the POD times.", [...ref2, ...d.refs], { agreed: d.amount, calc: `${d.calc} = $${fmt(d.amount)}` });
-    return out("fail", `Detention billed ${l.qty ? l.qty.text : "?"} hrs ($${fmt(billed)}); the POD supports ${hrs(d.billableMin)} ($${fmt(d.amount)}).`, [...ref2, ...d.refs], {
-      agreed: d.amount, diff: billed - d.amount, calc: `${d.calc} = $${fmt(d.amount)}`,
+      return out("pass", "Supported by the POD times.", [...ref2, ...d.refs], { agreed: d.amount, calc });
+    const said = l.qty ? `${l.qty.text} hrs ($${fmt(billed)})` : `$${fmt(billed)}`;
+    const sup = hrs(d.billableMin);
+    return out("fail", `Detention billed ${said}; the POD supports ${sup} ($${fmt(d.amount)}).`, [...ref2, ...d.refs], {
+      agreed: d.amount, diff: billed - d.amount, calc,
+      sum: `${d.calc.charAt(0).toUpperCase()}${d.calc.slice(1)}.`,
+      short: l.qty ? `Detention billed ${l.qty.text} hrs, POD supports ${sup.replace(/ hrs?$/, "")}` : `Detention billed $${fmt(billed)}, POD supports $${fmt(d.amount)}`,
     });
   }
 

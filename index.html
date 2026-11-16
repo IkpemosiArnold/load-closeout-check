@@ -10,6 +10,7 @@
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#100f0e">
 <link rel="icon" href="data:,">
 <link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/newsreader.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="style.css?v=1">
 </head>
 <body>
@@ -24,14 +25,14 @@
     <header class="top">
       <p class="mark">Load Closeout <span class="tag">Sample data</span></p>
       <h1>Every dollar on a carrier invoice points at its paperwork.</h1>
-      <p class="sub">Eight delivered loads, all made up. Plain code checks each invoice against the rate con and the signed POD, and holds back what it cannot trace.</p>
+      <p class="sub">Eight made-up loads. Plain code, no model. What it cannot trace, it holds.</p>
     </header>
 
     <section class="reading" aria-labelledby="summary">
       <p class="summary" id="summary" role="status"><span class="sum-main">Checking</span></p>
       <button type="button" class="btn text why-btn" id="why-btn" aria-expanded="false" aria-controls="chain">What ready means</button>
       <div class="why-text" id="chain" hidden>
-        <p>Ready means the rate con, invoice and POD are all here with one load number, the invoice comes from the carrier and MC on the rate con, the POD is signed, dated and clean, every charge was agreed on the rate con and is supported, and the lines add up. Anything else is held back with the reason and the lines it looked at.</p>
+        <p>Ready means the rate con, invoice and POD are all here with one load number, the invoice comes from the carrier and MC on the rate con, the POD is signed, dated and clean, every charge was agreed on the rate con and is supported, and the lines add up. A charge billed twice, a line it cannot read or a remit-to line holds the load. Anything held back comes with the reason and the lines it looked at.</p>
         <p>Detention is worked out from the POD: the clock starts at the later of the appointment and the truck's arrival, stops at the out time, less the free hours, in quarter hours. A lumper needs its receipt.</p>
       </div>
       <div id="groups" class="groups"></div>

@@ -40,7 +40,7 @@ function markedLine(text, ranges, kind) {
   for (const r of rs) {
     if (r.start < at) continue;
     const k = typeof kind === "function" ? kind(r) : kind;
-    frag.append(text.slice(at, r.start), el("span", `u ${k === "pass" ? "pass" : "fail"}`, text.slice(r.start, r.end)));
+    frag.append(text.slice(at, r.start), el("span", `u ${k}`, text.slice(r.start, r.end)));
     at = r.end;
   }
   frag.append(text.slice(at));
@@ -49,7 +49,7 @@ function markedLine(text, ranges, kind) {
 
 /** The lines a check or an invoice line looked at, grouped by document line. */
 function sources(docs, refs, kind, failDocs = ["inv"]) {
-  const tone = kind === "pass" ? "pass" : (r) => (failDocs.includes(r.doc) ? "fail" : "pass");
+  const tone = kind === "pass" ? "pass" : (r) => (failDocs.includes(r.doc) ? kind : "pass");
   const box = el("div", "srcs");
   const by = new Map();
   for (const r of refs) {
@@ -92,7 +92,7 @@ function invoiceLines(r) {
     if (names.length) left.append(refs);
     const right = el("span", `q-r st-${l.state}`);
     right.append(icon(glyph[l.state]), el("span", "q-amt", usd(l.billed)));
-    if (l.diff) right.append(el("span", "q-note diff", `${usd(l.diff)} over`));
+    if (l.diff) right.append(el("span", "q-note diff", `${usd(Math.abs(l.diff))} ${l.diff > 0 ? "over" : "under"}`));
     b.append(left, right);
     item.append(b);
     b.addEventListener("click", () => {
@@ -166,7 +166,7 @@ function detail(r, { own = false } = {}) {
     box.append(ul);
     const hs = r.holds.flatMap((h) => h.refs);
     if (hs.length) {
-      const s = sources(r.docs, hs, "fail", r.holds.some((h) => h.id === "pod" || h.id === "load") ? ["inv", "pod"] : ["inv"]);
+      const s = sources(r.docs, hs, r.holds.every((h) => h.state === "none") ? "none" : "fail", r.holds.some((h) => h.id === "pod" || h.id === "load") ? ["inv", "pod"] : ["inv"]);
       box.append(s);
       draw(s);
     }
@@ -268,7 +268,7 @@ function shortWhy(r) {
     load: "Load numbers differ",
     carrier: "Invoice from a different MC",
     pod: h.state === "none" ? "POD not signed or dated" : "Exceptions on the POD",
-    lines: h.text.split(";")[0].replace(/^Not found: no (.+) in the packet for the (.+)\.$/, "No $1 for the $2").replace(/^Not found: /, "").replace(/\.$/, ""),
+    lines: (r.lines.find((l) => l.state !== "pass") || {}).short || h.text.split(";")[0].replace(/^Not found: no (.+) in the packet for the (.+)\.$/, "No $1 for the $2").replace(/^Not found: /, "").replace(/\.$/, ""),
     sum: "Lines do not add up",
   };
   const t = map[h.id] || h.text;

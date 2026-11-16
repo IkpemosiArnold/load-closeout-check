@@ -91,6 +91,7 @@ h1 { font-size: 30px; font-weight: 600; line-height: 1.1; letter-spacing: -.02em
   transition: background-size 320ms var(--ease-out) 80ms;
 }
 .u.fail { background-image: linear-gradient(var(--fail), var(--fail)); }
+.u.none { background-image: linear-gradient(var(--none), var(--none)); }
 .drawn .u, .drawn.u { background-size: 100% 2px; }
 
 .reasons { list-style: none; padding: 0; margin: 0; }
@@ -250,8 +251,8 @@ a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness:
 .doc { margin: 0 0 var(--s5); }
 .doc-h { font-size: 14px; font-weight: 500; color: var(--muted); margin: 0 0 var(--s1); }
 .doc-body { border-left: 1px solid var(--line); padding-left: var(--s4); font-family: var(--serif); font-size: 17px; line-height: 1.5; }
-.doc-body p { margin: 0; overflow-wrap: anywhere; display: grid; grid-template-columns: 22px minmax(0,1fr); column-gap: var(--s2); }
-.doc-body .ln { font-family: var(--sans); font-size: 12px; color: var(--muted); padding-top: 4px; font-variant-numeric: tabular-nums; text-align: right; }
+.doc-body p { margin: 0; overflow-wrap: anywhere; display: grid; grid-template-columns: 24px minmax(0,1fr); column-gap: var(--s2); }
+.doc-body .ln { font-family: var(--sans); font-size: 14px; color: var(--muted); padding-top: 3px; font-variant-numeric: tabular-nums; text-align: right; }
 .diff { display: block; font-size: 14px; color: var(--fail); font-variant-numeric: tabular-nums; }
 .inline-actions { display: flex; flex-wrap: wrap; gap: var(--s3) var(--s4); margin-top: var(--s4); }
 .btn:disabled { opacity: .45; cursor: default; }
